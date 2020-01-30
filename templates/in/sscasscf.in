@@ -1,0 +1,41 @@
+# General program information
+gpus                    1 0             # Specifies the number of GPUs and selects the GPU(s) to be used
+timings                 yes             # Switch to turn on/off global timings
+ 
+# Threshold information
+precision               double          # Selects the floating point precision
+threall                 5.0e-21         # The integral screening threshold
+convthre                5.0e-7          # The SCF wavefunction convergence threshold
+ 
+# Method, molecule, and basis information
+basis                   lanl2dz_ecp          # The basis set (required) sto-3g  6-31+g
+coordinates    coords.xyz
+method                  hf             # Selects the electronic structure method (required)
+run                     energy          # Selects the runtype (required)
+ 
+# Molecular charge and spin multiplicity
+charge                  0               # Selects the molecular charge (required)
+spinmult                1               # Spin multiplicity
+ 
+casscf               yes
+casscfmaxiter        100
+casscfmacromaxiter   100
+cpsacasscfmaxiter    100
+
+
+# Direct CI specific options
+directci                yes             # Force the use of direct CI (Davidson diagonalization)
+dcimaxiter              300             # Number of Davidson iterations for the CAS calculation
+dciprintinfo            yes             # print more information for the Davidson procedure
+dcipreconditioner       diagonal       # DONT use orbital energy difference preconditioning
+ 
+# Active Space and # of states
+closed    0
+active    0
+cassinglets             5               # Number of singlets to calculate
+casweights       [1,0,0,0,0]
+castriplets             0               # Number of triplets to calculate (only for small active spaces currently)
+cascharges              yes             # Perform Mulliken population analysis
+cas_ntos                yes             # Print out Singlet state single excitation character
+
+end

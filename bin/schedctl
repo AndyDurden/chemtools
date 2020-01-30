@@ -1,0 +1,133 @@
+#!/bin/python
+
+import os
+schedpath = os.getenv('SCHEDAEMONPATH',"/home/adurden/Programs/autotc/bin/")
+import sys
+sys.path.append(schedpath)
+from schedctl_lib import *
+
+
+from optparse import OptionParser
+usage = "usage: %prog [options] file1 file2 ..."
+parser=OptionParser(usage=usage)
+
+(options, args) = parser.parse_args()
+
+
+if len(args)<0:
+  print("usage here")
+  sys.exit(0)
+
+if args[0] == "start":
+  schedpid = get_sched_pid()
+  if schedpid:
+    print("Schedaemon already running with pid: "+str(schedpid)+"\n")
+    sys.exit(0)
+  else:
+    pid = start_sched()
+    if pid:
+      print("Started with pid: "+str(pid)+"\n")
+      sys.exit(0)
+    else:
+      print("Tried to start but something went wrong :(\n")
+      sys.exit(0)
+
+if args[0] == "stop":
+  print(stop_sched())
+  sys.exit(0)
+
+if args[0] == "restart":
+  print(restart_sched())
+ 
+
+if args[0] == "add":
+  schedpid = get_sched_pid()
+  if not schedpid:
+    print("Couldn't find scheduler process. Is it running?\n")
+    sys.exit(0)
+  if len(args)>1:
+    for arg in args[1:]:
+      if addjob(schedpid, arg):
+        print("Added "+arg+" successfully.\n")
+      else: print("Problem with "+arg+"\n")
+  else:
+    if addjob(schedpid, ""):
+      print("Added current directory job successfully.\n")
+    else: print("Problem with current directory job\n")
+
+  sys.exit(0)
+
+if ((args[0] == "q") or (args[0] == "queue")):
+  schedpid = get_sched_pid()
+  if not schedpid:
+    print("Couldn't find scheduler process. Is it running?\n")
+    sys.exit(0)
+  print("Requesting Queue...\n")
+  f = open('/proc/'+schedpid+'/fd/0','a')
+  f.write("!command printq "+str(os.getppid())+"\n")
+  f.flush;os.fsync(f.fileno());f.close(); del f
+  time.sleep(1)
+  start = time.time()
+  endmsg = False
+  f = open(schedpath+"/../log/queue",'r') 
+  while(time.time()-start < 30):
+    if endmsg: break
+    line=f.readline()
+    while line:
+      if line == "::ENDMESSAGE::":
+        print("")
+        sys.exit(0)
+      if line == "": pass
+      else: print line,
+      line=f.readline()
+  sys.exit(0)
+  
+
+if args[0] == "logq":
+  schedpid = get_sched_pid()
+  if not schedpid:
+    print("Couldn't find scheduler process. Is it running?\n")
+    sys.exit(0)
+  f = open('/proc/'+schedpid+'/fd/0','a')
+  f.write("!command logprintq\n")
+  f.flush;os.fsync(f.fileno());f.close()
+  print("Queue will be written to log file.\n")
+  sys.exit(0)
+
+if args[0] == "del":
+  if len(args)<2:
+    print("No jobid specified. Get jobids via 'schedctl q'.\n")
+    sys.exit(0)
+  schedpid = get_sched_pid()
+  if not schedpid:
+    print("Couldn't find scheduler process. Is it running?\n")
+    sys.exit(0)
+  f = open('/proc/'+schedpid+'/fd/0','a')
+  for jobid in args[1:]: 
+    f.write("!command del "+str(jobid)+"\n")
+  f.flush;os.fsync(f.fileno());f.close()
+  print("Delete request sent\n")
+  sys.exit(0)
+
+if args[0] == "swap":
+  if len(args)<3:
+    print("Expected two jobid arguments, less than 3 total arguments.")
+    sys.exit(0)
+  schedpid = get_sched_pid()
+  if not schedpid:  
+    print("Couldn't find scheduler process. Is it running?\n")
+    sys.exit(0)
+  f = open('/proc/'+schedpid+'/fd/0','a')
+  for jobid in args[1:]: 
+    f.write("!command swap "+str(args[1])+" "+str(args[2])+"\n")
+  f.flush;os.fsync(f.fileno());f.close()
+  print("Swap request sent\n")
+  sys.exit(0)
+
+
+
+
+
+
+
+

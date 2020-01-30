@@ -1,0 +1,36 @@
+gpus                    1 0             # Specifies the number of GPUs and selects the GPU(s) to be used
+timings                 yes             # Switch to turn on/off global timings
+
+precision               double          # Selects the floating point precision
+threall                 1.0e-20         # The integral screening threshold
+convthre                1.0e-6          # The SCF wavefunction convergence threshold
+
+basis                   lanl2dz_ecp          # The basis set (required)
+coordinates             coords.xyz         # Specifies the coordinates file (required)
+method                  hf              # Selects the electronic structure method (required)
+run                     energy
+
+charge                  0               # Selects the molecular charge (required)
+spinmult                1               # Spin multiplicity
+
+mrcis                   yes
+
+# Direct CI specific options
+directci                yes             # Force the use of direct CI (Davidson diagonalization)
+dcimaxiter              500             # Number of Davidson iterations for the CAS calculation
+dciprintinfo            yes             # print more information for the Davidson procedure
+dcipreconditioner	orbenergy	# use orbital energy difference preconditioning
+
+# Active Space and # of states
+closed                  0               # Number of closed orbitals
+active                  0               # Number of active orbitals
+cassinglets             20               # Number of singlets to calculate
+castriplets             0               # Number of triplets to calculate (only for small active spaces$
+cascharges              yes             # Perform Mulliken population analysis
+cas_ntos                yes             # Print out Singlet state single excitation character
+
+# Path for Molden output file
+molden mrcis.molden
+
+end
+

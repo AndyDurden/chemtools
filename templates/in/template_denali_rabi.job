@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source /home/adurden/.bashrc
+source /home/adurden/.bash_profile
+
+
+
+cd temppath
+
+/home/adurden/terachem/production/build/bin/terachem tempname.in -g 0 > tempname.out
+
+python /home/adurden/Programs/bin/rabi_analysis.py -i tempname.in -o tempname.out
+
+

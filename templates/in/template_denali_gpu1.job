@@ -1,0 +1,11 @@
+#!/bin/bash
+
+source /home/adurden/.bashrc
+source /home/adurden/.bash_profile
+
+
+
+cd temppath
+
+/home/adurden/terachem/production/build/bin/terachem tempname.in -g 1 > tempname.out
+
