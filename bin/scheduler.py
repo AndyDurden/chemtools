@@ -18,7 +18,7 @@ class schedaemon(Daemon):
     if not os.path.exists(self.stdin): open(self.stdin,'a').close()
     self.queue = []
     self.last_jobid = 0
-    self.templatedir = "/home/adurden/Programs/autojob/templates/in/"
+    self.templatedir = "/home/adurden/Programs/autotc/templates/in/"
     self.nnodes = 1
     self.node_template = ["template_denali.job"  ]
     self.node_proc = []

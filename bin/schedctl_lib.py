@@ -60,14 +60,26 @@ def addjob(schedpid,argstring):
     if len(infiles)>1:
       print("Multiple input files found. Using: "+str(infiles[0])+"\n")
     jobdict["name"] = (infiles[0]).split(".")[0] 
-  elif argstring[0] == "{": # Assume its a proper literal
-    jobdict = ast.literal_eval(argstring)  
-    if "path" not in jobdict.keys:
-      print("Input string didnt have a job path?\n")
+  # Really difficult to format the dictionary properly on command line, so forget this.
+  #elif argstring[0] == "{": # Assume its a proper literal
+  #  jobdict = ast.literal_eval(argstring)  
+  #  if "path" not in jobdict.keys:
+  #    print("Input string didnt have a job path?\n")
+  #    return False
+  #  if "name" not in jobdict.keys:
+  #    print("Input string didnt have a job name?\n")
+  #    return False
+  else: # assume argstring is alt_template
+    jobdict["path"] = (os.getcwd())+"/"
+    infiles = glob.glob('*.in')
+    if len(infiles)==0:
+      print("No input file found in current directory\n")
       return False
-    if "name" not in jobdict.keys:
-      print("Input string didnt have a job name?\n")
-      return False
+    if len(infiles)>1:
+      print("Multiple input files found. Using: "+str(infiles[0])+"\n")
+    jobdict["name"] = (infiles[0]).split(".")[0] 
+    jobdict["alt_template"] = argstring
+    
 
   f = open('/proc/'+schedpid+'/fd/0','a')
   f.write(str(jobdict)+"\n")
