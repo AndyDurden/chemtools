@@ -59,7 +59,8 @@ def addjob(schedpid,argstring):
       return False
     if len(infiles)>1:
       print("Multiple input files found. Using: "+str(infiles[0])+"\n")
-    jobdict["name"] = (infiles[0]).split(".")[0] 
+    #jobdict["name"] = (infiles[0]).split(".")[-1] 
+    jobdict["name"] = (infiles[0])[0:infiles[0].rindex(".")] 
   # Really difficult to format the dictionary properly on command line, so forget this.
   #elif argstring[0] == "{": # Assume its a proper literal
   #  jobdict = ast.literal_eval(argstring)  
