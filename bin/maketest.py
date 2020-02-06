@@ -70,7 +70,7 @@ def makefiles(xyz, job, xyz_params, job_params, xyzdir, jobdir, templatedir):
   input_template.close()
 
   # make .job file
-  shutil.copy( templatedir+"template_denali.job", jobpath+jobname+".job")
+  shutil.copy( templatedir+"template_corecm_floqci.job", jobpath+jobname+".job")
   p = subprocess.Popen( 'sed -i -e "s+temppath+'+jobpath+'+g" '+jobpath+jobname+'.job', shell=True)
   p.wait()
   p = subprocess.Popen( 'sed -i -e "s+tempname+'+jobname+'+g" '+jobpath+jobname+'.job', shell=True)
