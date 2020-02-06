@@ -5,6 +5,8 @@ import os
 from maketest import *
 import ConfigParser
 import ast
+import subprocess
+import time
 print("\n")
 
 settingsini = ConfigParser.ConfigParser()
@@ -23,7 +25,7 @@ if ("alt_template_name" not in settings.keys()) or (settings["alt_template_name"
 else:
   alt_template_name = settings["alt_template_name"]
 
-
+print(settings["alt_template_name"])
 
 if scheduler_mode:
   # make sure scheduler is running
@@ -46,6 +48,8 @@ xyz_params.readfp(open("../xyz_params.ini"))
 job_params = ConfigParser.ConfigParser()
 job_params.readfp(open("../job_params.ini"))
 
+jobcount = 0
+
 for xyz in xyz_params.sections():
   for jobtype in job_params.sections():
     makefiles(xyz, jobtype, xyz_params, job_params, xyzdir, jobdir, templatedir)
@@ -67,7 +71,15 @@ for xyz in xyz_params.sections():
         f.close()
         #runjob(jobdir+"/"+jobtype+"/"+xyz.split(".")[0]+"/", xyz.split(".")[0]+"_"+jobtype)
         print("Added!\n\n")
-      else: pass
+      else: # submit to comet scheduler
+        jobpath = jobdir+"/"+xyz.split(".")[0]+"/"+jobtype+"/"
+        jobname = xyz.split(".")[0]+"_"+jobtype
+        print("running: sbatch "+jobpath+jobname+".job")
+        p = subprocess.Popen( 'sbatch '+jobpath+jobname+".job", shell=True)
+        p.wait()
+        time.sleep(1)
+          
+
         
 
 

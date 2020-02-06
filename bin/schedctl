@@ -1,7 +1,7 @@
 #!/bin/python
 
 import os
-schedpath = os.getenv('SCHEDAEMONPATH',"/home/adurden/Programs/autotc/bin/")
+schedpath = os.getenv('SCHEDAEMONPATH',"/home/adurden/autotc/bin/")
 import sys
 sys.path.append(schedpath)
 from schedctl_lib import *
@@ -14,8 +14,17 @@ parser=OptionParser(usage=usage)
 (options, args) = parser.parse_args()
 
 
-if len(args)<0:
-  print("usage here")
+if len(args)<1:
+  print("Usage: schedctl arg1 arg2 ...")
+  print("schedctl start                      : Starts the daemon")
+  print("schedctl stop                       : Stops the daemon")
+  print("schedctl restart                    : Stops the daemon, and then starts it")
+  print("schedctl q                          : Updates the queuefile with the current queue and prints it. Alias: queue")
+  print("schedctl logq                       : Writes the current queue to the log (autotc/log/log by default)")
+  print("schedctl add [alt_template]         : Adds terachem job in current directory to queue, using either the default or specified job template.")
+  print("schedctl swap jid1 jid2             : Swaps the position of jobs in the queue, specified by jobid")
+  print("schedctl reserve nodenumber [force] : Send reservation request for a node. Reserved nodes will not be used for jobs in the queue. The 'force' argument will kill any job currently running on the node, and send it to the back of the queue. Alias: res")
+  print("schedctl unreserve nodenumber       : Clear reserved status on a node so that queued jobs may run on it again. Alias: unres")
   sys.exit(0)
 
 if args[0] == "start":
@@ -124,8 +133,38 @@ if args[0] == "swap":
   print("Swap request sent\n")
   sys.exit(0)
 
+if (args[0] == "reserve") or (args[0] == "res"):
+  if len(args)<2:
+    print("No node number specified.\n")
+    sys.exit(0)
+  schedpid = get_sched_pid()
+  if not schedpid:
+    print("Couldn't find scheduler process. Is it running?\n")
+    sys.exit(0)
+  f = open('/proc/'+schedpid+'/fd/0','a')
+  if len(args)>2:
+    if args[2] == "force":
+      f.write("!command reserve "+str(args[1])+" force\n")
+    else: f.write("!command reserve "+str(args[1])+"\n")
+  else:
+    f.write("!command reserve "+str(args[1])+"\n")
+  f.flush;os.fsync(f.fileno());f.close()
+  print("Reservation request sent\n")
+  sys.exit(0)
 
-
+if (args[0] == "unreserve") or (args[0] == "unres"):
+  if len(args)<2:
+    print("No node number specified.\n")
+    sys.exit(0)
+  schedpid = get_sched_pid()
+  if not schedpid:
+    print("Couldn't find scheduler process. Is it running?\n")
+    sys.exit(0)
+  f = open('/proc/'+schedpid+'/fd/0','a')
+  f.write("!command unreserve "+str(args[1])+"\n")
+  f.flush;os.fsync(f.fileno());f.close()
+  print("Unreservation request sent\n")
+  sys.exit(0)
 
 
 
