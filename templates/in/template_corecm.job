@@ -1,9 +1,0 @@
-#!/bin/bash
-
-source /home/adurden/.bash_profile
-
-
-cd temppath
-
-/home/adurden/production/build/bin/terachem -g tempgpunum tempname.in > tempname.out
-
