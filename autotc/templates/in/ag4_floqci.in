@@ -1,0 +1,58 @@
+gpus                    1 0
+timings                 yes
+
+precision               double
+threall                 1.0e-20
+convthre                1.0e-6 
+
+basis                   lanl2dz_ecp   
+coordinates             ag4.xyz 
+method                  hf           
+run                     tdci         
+
+
+floquet_single_point    yes
+csf_basis no
+
+charge                  0  
+spinmult                1  
+purify                  yes
+
+# TDCI specific options
+fstrength               1.0E+16  # field strength in W/m^2 
+fdirection              z
+floquet yes
+floquet_photons 1
+photoneng 0.06361450956
+
+# CISNO specific options
+cisno                   yes             # Select a CISNO-CASCI calculation
+cisnostates             7               # Number of CISNO states used to form orbitals
+cisnumstates            10               # Number of CIS states to calculate
+cisguessvecs            12               # Number of guess vectors to use for the CIS calculation
+cisconvtol              1.0e-8          # The CIS wavefunction convergence threshold
+cismaxiter              500             # Number of Davidson iterations for the CIS calculation
+
+
+casci yes
+
+# Direct CI specific options
+ci_solver               direct          # options: hard_coded, direct, explicit, rank_reduced, dmrg
+dcimaxiter              300             # Number of Davidson iterations for the CAS calculation          
+dciprintinfo            yes             # print more information for the Davidson procedure              
+dcipreconditioner       orbenergy       # use orbital energy difference preconditioning 
+
+rcimaxiter 300
+ahmaxiter 300
+cisnomaxiter 300
+
+
+# Active Space and # of states
+# 38 homo
+closed                  36   
+active                  16   
+cassinglets             20 
+castriplets             10 
+cascharges              yes 
+#cas_ntos   yes
+

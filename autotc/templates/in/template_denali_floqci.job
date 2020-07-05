@@ -1,0 +1,15 @@
+#!/bin/bash
+
+source /home/adurden/.bashrc
+source /home/adurden/.bash_profile
+
+
+
+cd temppath
+
+/home/adurden/terachem/production/build/bin/terachem tempname.in -g 0 > tempname.out
+
+python /home/adurden/Programs/bin/floq_transprob.py tempname.in >> /home/adurden/ag2_floqci.csv
+
+
+
