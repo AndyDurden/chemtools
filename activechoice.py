@@ -1,10 +1,28 @@
 #!/bin/python
+
+
+#############################
+# Author: Andy Durden ^_^
+# Email: andys.durden@gmail.com
+# Usage: python activechoice.py cis.out threshold homo maxroot_to_include1 maxroot_to_include2 ...
+# 
+# This script gives you a good starting point for determining a CAS/MRCIS active space
+# based on a preliminary CIS calculation. You choose a root, the script looks at CI vectors
+# for the chosen root and lower roots, and chooses an active space that includes all 
+# orbitals with excitations with larger CI coefficient than [threshold]. Even if you're not
+# using the exact same orbitals in your CAS, this is probably a good starting point
+# for figuring out what the size of your active space should be.
+#############################
+
+
+
 import sys
 import math
 
 
 # Usage: python activechoice.py cis.out threshold homo maxroot_to_include1 maxroot_to_include2 ...  
 
+# read in CI vectors
 thresh = float(sys.argv[2])
 f = open(sys.argv[1], 'r')
 currline = f.readline().split()
@@ -27,7 +45,7 @@ homo = int(sys.argv[3])
 for root in sys.argv[4:]:
   mino = 999999
   maxo = 0
-  for i in roots[:int(root)]:
+  for i in roots[:int(root)]: # Loop over chosen root and lower roots.
     mino = min(mino, min(i))
     maxo = max(maxo, max(i))
   total_space = (maxo-mino)+1
