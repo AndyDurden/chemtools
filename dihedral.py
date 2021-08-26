@@ -1,4 +1,5 @@
 #!/bin/python
+<<<<<<< HEAD
 import numpy as np
 
 
@@ -6,6 +7,24 @@ import numpy as np
 
 # just some basic vector operations for working on xyz files
 
+=======
+
+#############################
+# Author: Andy Durden ^_^
+# Email: andys.durden@gmail.com
+# Usage: python dihedral.py coords.xyz atom_i1 atom_i2 atom_i3 atom_i4
+#
+# Feed me an xyz file and the indices of 4 atoms, I'll spit out the dihedral
+# 
+#############################
+
+
+
+import numpy as np
+
+
+# just some basic vector operations for working on xyz files
+>>>>>>> 789a18831bf8891012a8c882da4793eeca6ede16
 # ONLY FOR 3-VECTORS
 class vec:
   def __init__(self, x):

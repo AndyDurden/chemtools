@@ -1,3 +1,18 @@
+<<<<<<< HEAD
+=======
+#!/bin/python
+
+#############################
+# Author: Andy Durden ^_^
+# Email: andys.durden@gmail.com
+# Usage: python gmh.py terachem_tddft_output.out
+# 
+# This file should take a TDDFT or CIS terachem output file
+# and generate a matrix in .csv format of the Generalized Mulliken-Hush
+# couplings between all the states in the calculation.
+#############################
+
+>>>>>>> 789a18831bf8891012a8c882da4793eeca6ede16
 
 # includes tddft
 class cis:
