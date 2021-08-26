@@ -12,13 +12,13 @@ class schedaemon(Daemon):
     self.stdin = "/tmp/schedaemon_stdin"
     self.stdout = "/tmp/schedaemon_stdout"
     self.stderr = "/tmp/schedaemon_stderr"
-    self.logdir = "/home/adurden/Programs/autotc/log/"
+    self.logdir = "/home/adurden/Programs/chemtools/autotc/log/"
     self.logf = self.logdir+"log"
     self.pidfile = pidfile
     if not os.path.exists(self.stdin): open(self.stdin,'a').close()
     self.queue = []
     self.last_jobid = 0
-    self.templatedir = "/home/adurden/Programs/autotc/templates/in/"
+    self.templatedir = "/home/adurden/Programs/chemtools/autotc/templates/in/"
     self.nnodes = 1
     self.node_template = []
     self.node_proc = []

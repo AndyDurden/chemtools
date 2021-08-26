@@ -7,7 +7,7 @@ import subprocess
 import time
 import ast
 
-schedpath = os.getenv('SCHEDAEMONPATH',"/home/adurden/Programs/autotc/bin/")
+schedpath = os.getenv('SCHEDAEMONPATH',"/home/adurden/Programs/chemtools/autotc/bin/")
 
 def get_sched_pid():
   if not os.path.exists("/tmp/schedaemon.pid"): return False
