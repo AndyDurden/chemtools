@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 #!/bin/python
 
 #############################
@@ -12,7 +10,6 @@
 # couplings between all the states in the calculation.
 #############################
 
->>>>>>> 789a18831bf8891012a8c882da4793eeca6ede16
 
 # includes tddft
 class cis:
