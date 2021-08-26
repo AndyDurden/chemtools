@@ -26,9 +26,9 @@ usage = "usage: %prog [options] file1 file2 ..."
 parser=OptionParser(usage=usage)
 # General
 parser.add_option("--outname", action="store", default=False, dest="outname", help="Set a name for associated output files like [outname]_fft.csv and [outname].png. Defaults to the input filename.")
-parser.add_option("--floquet", action="store", default=False, dest="floquet", help="Input E in a.u. Will fft the sum of file1, file2*e^(-i*n*t), file3*e^(-i*2*n*t), etc, which are the input files shifted by multiples of E in frequency. (Use this for Floquet-TDCI individual photon correlation functions)")
-parser.add_option("--combine-ffts", action="store_true", default=False, dest="combine_ffts", help="file1, file2, file3, etc.'s output fft's will be added together for the output graph. If combined with --floquet [E], inputs will NOT be shifted before fft, instead they will be shifted afterwards. Expect 0-symmetry artifacts to show up at the shifted centers.")
-parser.add_option("--floquetscale", action="store", default=10000, dest="floquetscale", help="The whole --floquet thing decreases output amplitudes by a lot. Not sure why. Use this to scale up the output. Default is x10000")
+parser.add_option("--floquet", action="store", default="No", dest="floquet", help="Input E in a.u. Will fft the sum of file1, file2*e^(-i*n*t), file3*e^(-i*2*n*t), etc, which are the input files shifted by multiples of E in frequency. (Use this for Floquet-TDCI individual photon correlation functions)")
+#parser.add_option("--combine-ffts", action="store_true", default=False, dest="combine_ffts", help="file1, file2, file3, etc.'s output fft's will be added together for the output graph. If combined with --floquet [E], inputs will NOT be shifted before fft, instead they will be shifted afterwards. Expect 0-symmetry artifacts to show up at the shifted centers.")
+#parser.add_option("--floquetscale", action="store", default=1.0, dest="floquetscale", help="The whole --floquet thing decreases output amplitudes by a lot. Not sure why. Use this to scale up the output. Default is 1.0 (no scaling)")
 
 
 # Pre-processing
@@ -51,6 +51,7 @@ parser.add_option("--pstep", action="store", default=False, dest="pstep", help="
 
 # Post-FFT Processing
 parser.add_option("--window-scale", action="store_true", default=False, dest="window_scaling", help="Scale output FT by the frequency response of the window function.")
+parser.add_option("-u", "--arbitrary-units", action="store_true", default=False, dest="yunits", help="Scale Y to arbitrary units (max signal=1) ignores points within [-0.1 eV, 0.1 eV] to miss the zero-peak.")
 
 
 # Plotting 
@@ -85,6 +86,10 @@ td_thresh = 1.0
 pmin, pmax = 0,0
 
 truncate = int(options.truncate)
+#options.floquetscale = float(options.floquetscale)
+if options.floquet != "No":
+  options.floquet = float(options.floquet)
+  print("f: "+str(options.floquet))
 
 # pade options
 if options.nskip: options.nskip = int(options.nskip)
@@ -235,6 +240,7 @@ def getE(filename):
   f.close()
   return E
 
+# Used for color coding the direction of the transition dipole of states which -e represents as vertical lines
 # RED = X, BLUE = Y, GREEN = Z
 # format is (R,G,B), normalize to max of 1
 def color_from_tds(td):
@@ -267,19 +273,28 @@ def getDeltaPop(filename):
 # Kinda crappy, but we average points that are less than 1/10th of the maximum to try to avoid peaks
 # how does nmr plotting software auto-zero work?
 def get_baseline(engs, fftX, fftY):
-  baseline = 0.0
+  baseline = 0j
   maxpeak = abs(max(fftY[5:]))
-  n = len(fftX)-5
+  lowerN = indexOfX(fftX, -50.0)
+  upperN = indexOfX(fftX, 50.0)
+  N = upperN - lowerN
+  #n = len(fftX)-5
   print("maxpeak: "+str(maxpeak))
-  print("init n: "+str(n))
-  for i in range(5, len(fftX)):
-    baseline += abs(fftY[i])
+  print("init n: "+str(N))
+  #for i in range(5, len(fftX)):
+  for i in range(lowerN, upperN):
+    #baseline += abs(fftY[i])
+    if (abs(fftX[i]) > 0.3):  # don't integrate center peak into the zero, its huge.
+      baseline += fftY[i]
+    else:
+      N = N-1
     #if (abs(fftY[i])< maxpeak/5):
     #  baseline += abs(fftY[i])
     #else:
     #  n = n-1
-  print("end n: "+str(n))
-  baseline = baseline/(2.0*n)
+  print("end n: "+str(N))
+  #baseline = baseline/(2.0*n)
+  baseline = baseline/float(N)
   return baseline
   
 # the same as list.index(x), but for ordered float lists where entries
@@ -296,8 +311,9 @@ def indexOfX(fftX, x):
 def IntegratePeaks(engs, fftX, fftY):
   baseline = get_baseline(engs, fftX, fftY)
   print("\nintegration baseline: "+str(baseline)+"\n")
-  maxwidth = 3.0 # in eV
-  integral = np.zeros(len(engs))
+  maxwidth = 0.4 # in eV
+  integral = np.zeros(len(engs), dtype=np.cdouble)
+  widths = np.zeros(len(engs), dtype=np.cdouble)
   dx = abs(fftX[10]-fftX[11])
   for i in range(0,len(engs)):
     peakj = indexOfX(fftX, engs[i])
@@ -319,13 +335,18 @@ def IntegratePeaks(engs, fftX, fftY):
     # get indices of bounds
     lowerboundj = indexOfX(fftX, lowerbound)
     upperboundj = indexOfX(fftX, upperbound)
+    #import pdb; pdb.set_trace()
+    widths[i] = upperboundj - lowerboundj
     for j in range(lowerboundj, upperboundj+1):
-      if (abs(fftY[j]) >= baseline):
-        integral[i] += abs(fftY[j])
-    print("peak "+str(i)+": integral="+str(integral[i])+", lowerbound="+str(lowerbound)+" ("+str(lowerboundj)+"), upperbound="+str(upperbound)+" ("+str(upperboundj)+")\n")
-  return integral
+      integral[i] += fftY[j]
+      #if (abs(fftY[j]) >= baseline):
+      #  integral[i] += abs(fftY[j])
+    print("peak "+str(i)+"("+str(engs[i])+"eV): integral="+str(integral[i])+", lowerbound="+str(lowerbound)+
+          " ("+str(lowerboundj)+"), upperbound="+str(upperbound)+" ("+str(upperboundj)+
+          "), width="+str(widths[i])+", scaled="+str(abs(integral[i] - widths[i]*baseline))+"\n")
+  return integral, widths, baseline
       
-
+# Write a .csv that compares peak integrals to TDCI projected populations
 def PopCheck(X_eV, FFs, E, tds):
   pops = getDeltaPop("Pop0")
   engs = []
@@ -339,12 +360,15 @@ def PopCheck(X_eV, FFs, E, tds):
       tds[i][j] = float(tds[i][j])
 
   print("X_eV: "+str(X_eV[0:10]))
-  integrals = IntegratePeaks(engs, X_eV, FFs)
+  integrals, widths, baseline = IntegratePeaks(engs, X_eV, FFs)
   
   f = open("fft_analysis.csv",'w')
-  f.write("State,Ex.Eng(eV),Tx,Ty,Tz,|T|,Pop,integral\n")
+  f.write("State,Ex.Eng(eV),Tx,Ty,Tz,|T|,Pop,SumRe,SumIm,SumAbs\n")
   for i in range(0,len(states)):
-    f.write(str(states[i]+1)+","+str(engs[i])+","+str(tds[states[i]][0])+","+str(tds[states[i]][1])+","+str(tds[states[i]][2])+","+str(tds[states[i]][3])+","+str(pops[states[i]+1])+","+str(integrals[i])+"\n" )
+    scaledsum = integrals[i] - widths[i]*baseline
+    f.write(str(states[i]+1)+","+str(engs[i])+","+str(tds[states[i]][0])+","+
+    str(tds[states[i]][1])+","+str(tds[states[i]][2])+","+str(tds[states[i]][3])+
+    ","+str(pops[states[i]+1])+","+str(integrals[i].real)+","+str(integrals[i].imag)+","+str(abs(integrals[i]))+"\n" )
   f.close()
 
 
@@ -354,20 +378,23 @@ def PopCheck(X_eV, FFs, E, tds):
 def combine_corrfns(X, Ylist, photoneng):
   # sanity check
   for i in range(0,len(Ylist)):
-    if len(X) != len(y):
-      print(str(i)+"th element of Ylist has length "+str(len(y))+" which doesnt match the length of X, "+str(len(X)))
+    if len(X) != len(Ylist[i]):
+      print(str(i)+"th element of Ylist has length "+str(len(Ylist[i]))+" which doesnt match the length of X, "+str(len(X)))
       return None
-
-  shiftY = [options.floquetscale*Ylist[0]]
+  #options.floquetscale = float(options.floquetscale)
+  #shiftY = [options.floquetscale*Ylist[0]]
   for i in range(1,len(Ylist)):
     # from hartree to J with as, kg*m^2/as^2
     # 1 H * (4.359744*10**-18 J / 1 H) *  1/(6.626*10**-34 J*s) * (1 s/ 10**18 as) = 1/as
+    #import pdb; pdb.set_trace()
     photon_eng_ias = photoneng * 4.3597447222071*(10**-18) * 1./(6.62607015*10**-34) * (1./(10**18))
     # ugh X is in attoseconds so i have to do some kind of conversion
     #shifter = np.exp(-1j* i*photon_eng_ias*X)
-    shifter = options.floquetscale*np.exp(-1j*2*np.pi*i*photon_eng_ias*X)
-    # hope this does component-wise multiplication
+    #shifter = options.floquetscale*np.exp(-1j*2*np.pi*i*photon_eng_ias*X)
+    shifter = np.exp(-1j*2*np.pi*i*photon_eng_ias*X)
+    # component-wise multiplication
     shiftY.append( Ylist[i]*shifter )
+    #import pdb; pdb.set_trace()
     #shiftY.append( np.multiply(Ylist[i],shifter) )
     #shiftY.append( shifter )
   # combine shifted Y's
@@ -376,6 +403,7 @@ def combine_corrfns(X, Ylist, photoneng):
   return outputY
 
 # SHIFTS FFT OUTPUTS AND THEN SUMS THEM
+# THIS IS DUMB AND YOU SHOULD DO combine_corrnfs INSTEAD UNLESS YOU HAVE A GOOD REASON
 # This function accepts separate X ranges, because if we shifted floquet data
 # after fft, X range will be different, and we'll need to sort the Y datapoints into
 # the nearest frequency bins of Xlist[0]
@@ -400,7 +428,7 @@ def import_corrfn(infile):
     i = 0
     for line in f:
       line = line.split(',') 
-      if len(line) != 3: pass # ignore blank or header lines
+      if len(line) < 3: pass # ignore blank or header lines
       elif i%options.nskip != 0: i+=1 # only include every Nth datapoint
       elif i > truncate: i+=1
       else:
@@ -427,7 +455,6 @@ def process_corrfn(X,Y):
           # This should probably only be used with shift.
       X = np.array(list(np.linspace(-X[-1],-X[1],len(X)-1)) + list(X))
       Y = np.array(list(np.conj(Y[1:][::-1])) + list(Y)) 
-      print("len(X): local scope"+str(len(X)))
     
   else: # no mirror
     if options.center_mode == "u":
@@ -508,7 +535,6 @@ def process_corrfn(X,Y):
       X = X[:-1]
       W = W[:-1]
 
-  print("len(X) b4 return: "+str(len(X)))
   return (X, Y, W)
 
 
@@ -547,15 +573,15 @@ def calculate_fft(X, Y, infile):
     print("y[1]: "+str(Y[1])+"\n")
     FFs = np.fft.fft(Y.real)
     freqs = np.fft.fftfreq(len(X), X[1]-X[0])
-    #FFs = np.fft.fftshift(FFs)
-    #freqs = np.fft.fftshift(freqs)
+    FFs = np.fft.fftshift(FFs)
+    freqs = np.fft.fftshift(freqs)
     if ((options.window_scaling) and len(W) > 1):
       if len(W) != len(X): print("W and X dimension mismatch")
       W_FF = np.fft.fft(np.array(W))
       FFs = FFs/W_FF
 
-
-  #FFs = FFs/(float(len(X))) # scale by number of DFFT bins, sort of normalization
+  print("Scaling by number of DFFT bins")
+  FFs = FFs/(float(len(X))) # scale by number of DFFT bins, sort of normalization
 
   X_s=np.array(freqs)*10**18 # from inv attosecond to inv seconds
   X_eV = h*X_s # energy in eV
@@ -624,7 +650,7 @@ def windowgraph(X_ev, W_FFs):
 
   fig = plt.figure()
   ax = fig.add_subplot(111,aspect=aspectr)
-  ax.set_ylabel('R')
+  ax.set_ylabel('R (Arbitrary Units)')
   ax.set_xlabel('Energy (eV)')
   ax.set_ylim(ylim)
   ax.set_xlim(xlim)
@@ -646,10 +672,31 @@ def windowgraph(X_ev, W_FFs):
     plt.savefig(infile.split(".")[0]+"_window.png",dpi=900,aspect=0.5)
   return 0
 
+def scale_to_arbitrary_units(X_eV, FFs):
+  maxF = 0.0
+  maxi = 0
+  for i in range(0, len(X_eV)):
+    if ((X_eV[i] > -0.1) and (X_eV[i] < 0.1)): # do not include center peak
+      continue
+    else:
+      if abs(FFs[i]) > maxF:
+        maxF = abs(FFs[i])
+        maxi = i
+  # max found
+  for i in range(0, len(X_eV)):
+    FFs[i] = FFs[i]/maxF
+  # return the max, FFs array should be changed.
+  print("scaling to arbitrary units:")
+  print("maxi , X_eV[maxi]: "+str(maxi)+", "+str(X_eV[maxi]))
+  print(str(maxF)+"->"+str(abs(FFs[maxi])))
+  return FFs, maxi, maxF 
+
+
 def drawgraph(X_eV, FFs,infile, maxf=None):
   # GRAPH RANGES
   xlim = [0.0,10]
   ylim = [-0.01,2]
+  # x index of the max value (that isnt at x=0)
   mmm = list(abs(FFs)[1:]).index(max(abs(FFs)[1:]))
   maxf = abs(FFs)[1:][mmm]
   #aspectr = (xlim[1]-xlim[0])*9./((ylim[1]-ylim[0])*16)
@@ -716,18 +763,18 @@ def drawgraph(X_eV, FFs,infile, maxf=None):
   return 0
 
 def main_addshift_ffts():
-  print("Entering options.combine_ffts branch\n")
+  print("Entering options.combine_ffts DUMB ADDSHIFT branch\n")
   FFslist = []
   Xlist = []
   for i in range(0,len(args)):
     #X, Y = import_corrfn(args[i])
     X, Y = import_corrfn(args[i])
     X_ev, Y, W = process_corrfn(X, Y)
-    X_eV_temp, FFs_temp, W_FFs_temp = calculate_fft(X, Y, args[i])
+    X_eV_temp, FFs_temp, W_FFs_temp, maxf = calculate_fft(X, Y, args[i])
     # plot individual FFT
     if not options.no_plot:
       filename = args[i].split(".")[0]+"_fft.csv"
-      drawgraph(X_eV_temp, FFs_temp, filename)
+      drawgraph(X_eV_temp, FFs_temp, filename, maxf)
       if (options.window_scaling and options.windowfunc):
         windowgraph(X_eV_temp, W_FFs_temp)
 
@@ -753,16 +800,18 @@ def main_addshift_ffts():
     filename = options.outname+"_combinedfft.png"
   else: filename = args[0].split(".")[0]+"_combinedfft.png"
   print((Y[0], Y[1], Y[2]))
-  drawgraph(np.array(X_eVlist[0]), np.array(Y), filename)
+  drawgraph(np.array(X_eVlist[0]), np.array(Y), filename, maxf)
 
-def main_mulshift_corrfs():
-  print("Entering options.floquet branch\n")
+def main_mulshift_corrfns(E, tds):
+  print("Entering options.floquet mulshift branch\n")
   X_eV = []
   FFs = []
   W_FFs = []
   Ylist = []
   X = []
   Y = []
+  maxi = 0
+  maxf = 0
   if options.no_fft:
     X_eV, FFs = import_from_csv(datafile)
 
@@ -772,42 +821,51 @@ def main_mulshift_corrfs():
       Ylist.append(Y)
     Y = combine_corrfns(X, Ylist, options.floquet)
     filename = args[0].split(".")[0]+"_combined.csv"
+    if options.outname:  filename = str(options.outname)+"_combined.csv"
     f = open(filename, 'w')
     f.write("X(as), Yr, Yi\n")
     for j in range(0,len(X)):
       f.write( str(X[j])+","+str(Y[j].real)+","+str(Y[j].imag)+"\n")
     f.close();del f
-    X_eV, FFs, W_FFs = calculate_fft(X, Y, filename)
+    X_eV, Y, W = process_corrfn(X, Y)
+    X_eV, FFs, W_FFs, maxf = calculate_fft(X_eV, Y, filename)
   #print("max abs: "+str( max( abs(FFs[1:]))))
+  # Scale to arbitrary units
+  if options.yunits:
+    FFs, maxi, maxf = scale_to_arbitrary_units(X_eV, FFs)
   if not options.no_plot:
-    drawgraph(X_eV, FFs, filename)
+    print("before drawgraph: (maxi, maxf, FFs[maxi]): "+str((maxi,maxf, FFs[maxi])))
+    drawgraph(X_eV, FFs, filename, maxf)
     if (options.window_scaling and options.windowfunc):
       windowgraph(X_eV, W_FFs)
+  if options.tcoutfile and options.popcheck:
+    PopCheck(X_eV, FFs, E, tds)
 
-def main_regular():
+def main_regular(E, tds):
   #for datafile in args:
   X_eV = []
   FFs = [] 
   W_FFs = []
   maxf = None
+  maxi = None
   if options.no_fft:
     #X_eV, FFs = import_from_csv(datafile)
     X_eV, FFs = import_from_csv(args[0])
   else:
     X, Y = import_corrfn(args[0])
-    print("len(X) out of import_corrfn: "+str(len(X)))
     X_eV, Y, W = process_corrfn(X, Y)
-    print("len(X) out of process_corrfn: "+str(len(X_eV)))
     X_eV, FFs, W_FFs, maxf = calculate_fft(X_eV, Y, args[0])
-    print("len(X) out of calculate_fft: "+str(len(X_eV)))
   #print("max abs: "+str( max( abs(FFs[1:]))))
-  print("immediately after calculate_fft X_eV: "+str(X_eV[0:10]))
+  # Scale to arbitrary units
+  if options.yunits:
+    FFs, maxi, maxf = scale_to_arbitrary_units(X_eV, FFs)
   if not options.no_plot:
     #drawgraph(X_eV, FFs, datafile, maxf)
+    #print("before drawgraph: (maxi, maxf, FFs[maxi]): "+str((maxi,maxf, FFs[maxi])))
     drawgraph(X_eV, FFs, args[0], maxf)
     if (options.window_scaling and options.windowfunc):
       windowgraph(X_eV, W_FFs)
-  print("X_eV: "+str(X_eV[0:10]))
+  #print("X_eV: "+str(X_eV[0:10]))
   if options.tcoutfile and options.popcheck:
     PopCheck(X_eV, FFs, E, tds)
 
@@ -819,22 +877,22 @@ tds = []
 if options.tcoutfile:
   E = getE(options.tcoutfile)
   tds = get_tds(options.tcoutfile)
-  print("len(E): "+str(len(E))+", len(tds): "+str(len(tds))+"\n")
-  print(E)
-  print(tds)
+  #print("len(E): "+str(len(E))+", len(tds): "+str(len(tds))+"\n")
+  #print(E)
+  #print(tds)
 
 # This is the dumb way to do floquet
 # Adds FFT outputs together, shifted.
-if options.combine_ffts:
-  main_addshift_ffts()
+#if options.combine_ffts:
+#  main_addshift_ffts()
 
 # This is the right way to do floquet
 # Multiples CorrFns by e^(-i shift), sums them together, then FFTs the whole thing.
-elif options.floquet:
-  main_mulshift_corrfns()
+if options.floquet != "No":
+  main_mulshift_corrfns(E, tds)
 
 else: # Regular ol' FFT
-  main_regular()
+  main_regular(E, tds)
 
 
  
