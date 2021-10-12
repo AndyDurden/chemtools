@@ -3,11 +3,6 @@ import numpy as np
 
 
 
-
-# just some basic vector operations for working on xyz files
-
-=======
-
 #############################
 # Author: Andy Durden ^_^
 # Email: andys.durden@gmail.com
@@ -26,13 +21,18 @@ import numpy as np
 # ONLY FOR 3-VECTORS
 class vec:
   def __init__(self, x):
-    if len(x) != 3:
+    if isinstance(x, vec):
+      self.x = x.x
+      return None
+    elif len(x) != 3:
       print("ONLY 3-VECTORS!!")
       return 1
     self.x=np.array(x)
 
   # Vector Length
   def len(self):
+    return np.sqrt(self.x[0]**2+self.x[1]**2+self.x[2]**2)
+  def __len__(self):
     return np.sqrt(self.x[0]**2+self.x[1]**2+self.x[2]**2)
  
   def __getitem__(self, i):
@@ -75,6 +75,10 @@ class vec:
     return vec(( self.x[0]+other.x[0],
              self.x[1]+other.x[1],
              self.x[2]+other.x[2]))
+  def __radd__(self,other): # its commutative
+    return vec(( self.x[0]+other.x[0],
+             self.x[1]+other.x[1],
+             self.x[2]+other.x[2]))
   # Returns unit vector in direction of vec
   def norm(self):
     if np.allclose(self.x, np.array([0,0,0])):
@@ -97,7 +101,7 @@ def angle(p1,p2,p3):
   a = vec(p2)-vec(p1)
   b = vec(p3)-vec(p2)
   return np.atan2( (a*b).len() , a.dot(b) )
-# 
+
 # Returns dihedral angle (in radians) between four points
 def dihedral(p1,p2,p3,p4):
   b1 = vec(p2)-vec(p1) # from p1 to p2
@@ -118,7 +122,13 @@ def dihedral(p1,p2,p3,p4):
   if y == 0: y=+0.0
   return np.arctan2(y,x) # Better behavior than arccos
 
-
+def centroid(veclist):
+  # cannot get sum(veclist) to work. runs into an int+vec. why???
+  z = (0.,0.,0.)
+  vecsum = vec(z)
+  for veci in veclist:
+    vecsum = vecsum + veci
+  return vecsum*(1./float(len(veclist)))
 
 import sys
 def readxyz(filename):
@@ -137,17 +147,50 @@ def readxyz(filename):
     i=i+1
   return refx
 
+def dihedral_main():
+  refx = readxyz(sys.argv[2])
+  a = int(sys.argv[2])-1
+  b = int(sys.argv[3])-1
+  c = int(sys.argv[4])-1
+  d = int(sys.argv[5])-1
+  d_rad = dihedral( refx[a]['x'], refx[b]['x'], refx[c]['x'], refx[d]['x'] ) 
+  print( d_rad* 180.0/np.pi)
+  return ((d_rad*180.0/np.pi))
 
-refx = readxyz(sys.argv[1])
-a = int(sys.argv[2])-1
-b = int(sys.argv[3])-1
-c = int(sys.argv[4])-1
-d = int(sys.argv[5])-1
-#for i in [a,b,c,d]: print(refx[i])
+# distance between two centroids
+def centroid_main():
+  # yeah im hardcoding the atom numbers so i dont have to pass 12 arguments what about it
+  refx = readxyz(sys.argv[2])
+  atoms1 = [1,2,3,4,5,6]
+  atoms2 = [40,42,43,44,46]
+  vec1 = list(map( lambda x: vec(refx[x]['x']), atoms1 ))
+  vec2 = list(map( lambda x: vec(refx[x]['x']), atoms2 ))
+  c1 = centroid(vec1)
+  c2 = centroid(vec2)
+  print(dist(c1,c2))
+  return dist(c1,c2)
 
 
-d_rad = dihedral( refx[a]['x'], refx[b]['x'], refx[c]['x'], refx[d]['x'] ) 
-print( d_rad* 180.0/np.pi)
+
+# real main
+
+if sys.argv[1] == "dihedral":
+  dihedral_main()
+elif sys.argv[1] == "centroid":
+  centroid_main()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
