@@ -1,0 +1,27 @@
+# General program information
+gpus                    1 0             # Specifies the number of GPUs and selects the GPU(s) to be used
+timings                 yes             # Switch to turn on/off global timings
+ 
+# Threshold information
+precision               double          # Selects the floating point precision
+threall                 1.0e-20         # The integral screening threshold
+convthre                1.0e-6          # The SCF wavefunction convergence threshold
+ 
+# Method, molecule, and basis information
+basis                   lanl2dz_ecp         # The basis set (required)
+coordinates             coords.xyz      # Specifies the coordinates file (required)
+method                  b3lyp             # Selects the electronic structure method (required)
+run                     energy          # Selects the runtype (required)
+ 
+# Molecular charge and spin multiplicity
+charge                  0               # Selects the molecular charge (required)
+spinmult                1               # Spin multiplicity
+ 
+# CIS specific options
+cis                     yes
+cisnumstates            13               # Number of CIS states to calculate
+cisguessvecs            24               # Number of guess vectors to use for the CIS calculation
+cisconvtol              1.0e-8          # The CIS wavefunction convergence threshold
+cismaxiter              500             # Number of Davidson iterations for the CIS calculation
+ 
+end
