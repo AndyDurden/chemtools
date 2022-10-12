@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/python2.7
 
 import matplotlib
 matplotlib.use("Agg")
@@ -65,6 +65,9 @@ parser.add_option("--ymin", action="store", default=False, dest="ymin", help="Sp
 parser.add_option("--ymax", action="store", default=False, dest="ymax", help="Specify maximum y of graph window")
 parser.add_option("-e", "--excitations", action="store", default=False, dest="tcoutfile", help="Specify a TeraChem outfile to plot vertical excitations (with significant transition dipole) from.")
 parser.add_option("--ag3ndata", action="store_true", default=False, dest="ag3ndata", help="Draw vertical lines at experimental Ag3- energies.")
+
+
+parser.add_option("--xshift", action="store", default=False, dest="xshift", help="shift x values by constant")
 
 # Analyses afterwards
 parser.add_option("--popcheck", action="store_true", dest="popcheck", help="Integrate peaks at energies from terachem output, put them in a .csv with transition dipoles and populations from Pop file.")
@@ -382,7 +385,7 @@ def combine_corrfns(X, Ylist, photoneng):
       print(str(i)+"th element of Ylist has length "+str(len(Ylist[i]))+" which doesnt match the length of X, "+str(len(X)))
       return None
   #options.floquetscale = float(options.floquetscale)
-  #shiftY = [options.floquetscale*Ylist[0]]
+  shiftY = [Ylist[0]]
   for i in range(1,len(Ylist)):
     # from hartree to J with as, kg*m^2/as^2
     # 1 H * (4.359744*10**-18 J / 1 H) *  1/(6.626*10**-34 J*s) * (1 s/ 10**18 as) = 1/as
@@ -525,7 +528,7 @@ def process_corrfn(X,Y):
   # Since prime length numpy.fft sucks so much,
   # just remove points until we get a non-prime length
   while is_prime(len(Y)):
-    print("Input was prime, removing endpoint(s) to improve performance")
+    print("Input was prime ("+str(len(Y))+", removing endpoint(s) to improve performance")
     if options.mirror:
       Y = Y[1:-1]
       X = X[1:-1]
@@ -719,7 +722,7 @@ def drawgraph(X_eV, FFs,infile, maxf=None):
   aspectr = (xlim[1]-xlim[0])*0.45/((ylim[1]-ylim[0])*1)
 
   plt.tight_layout()
-  #plt.xticks(np.arange(xlim[0], xlim[1]+1, 1.0))
+  #plt.xticks(np.arange(xlim[0], xlim[1]+1, (xlim[1]+1-xlim[0])/10.))
   #print(np.arange(xlim[0], xlim[1]+1, 1.0))
 
   fig = plt.figure()
@@ -729,7 +732,7 @@ def drawgraph(X_eV, FFs,infile, maxf=None):
   ax.set_xlabel('Energy (eV)')
   ax.set_ylim(ylim)
   ax.set_xlim(xlim)
-  ax.xaxis.set_major_locator(plticker.MultipleLocator(1.0))
+  ax.xaxis.set_major_locator(plticker.MultipleLocator(0.05))
   # h/w = aspect
   #ax.set_aspect( aspectr)
   #ax.set_aspect()
@@ -859,6 +862,8 @@ def main_regular(E, tds):
   # Scale to arbitrary units
   if options.yunits:
     FFs, maxi, maxf = scale_to_arbitrary_units(X_eV, FFs)
+  if options.xshift:
+    X_eV = np.array(X_eV) + float(options.xshift)
   if not options.no_plot:
     #drawgraph(X_eV, FFs, datafile, maxf)
     #print("before drawgraph: (maxi, maxf, FFs[maxi]): "+str((maxi,maxf, FFs[maxi])))

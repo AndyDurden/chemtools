@@ -1,11 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
  
+import sys, os, time, atexit
+#print("python version daemon.py: "+str(sys.version))
+
+
 # Written by Sander Marechal
 # http://web.archive.org/web/20131017130434/http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
 # 
 
 
-import sys, os, time, atexit
 from signal import SIGTERM
  
 class Daemon:

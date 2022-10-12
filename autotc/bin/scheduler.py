@@ -1,9 +1,11 @@
-#!/bin/python
+#!/usr/bin/env python2.7
 
 # Daemonizer from Sander Marechal
 # http://web.archive.org/web/20131017130434/http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
 
 import sys, os, shutil, subprocess, time, atexit, ast
+print("python version scheduler.py: "+str(sys.version))
+
 from daemon import Daemon
 import signal
 
@@ -12,19 +14,19 @@ class schedaemon(Daemon):
     self.stdin = "/tmp/schedaemon_stdin"
     self.stdout = "/tmp/schedaemon_stdout"
     self.stderr = "/tmp/schedaemon_stderr"
-    self.logdir = "/home/adurden/Programs/chemtools/autotc/log/"
+    self.logdir = "/home/adurden/chemtools/autotc/log/"
     self.logf = self.logdir+"log"
     self.pidfile = pidfile
     if not os.path.exists(self.stdin): open(self.stdin,'a').close()
     self.queue = []
     self.last_jobid = 0
-    self.templatedir = "/home/adurden/Programs/chemtools/autotc/templates/in/"
+    self.templatedir = "/home/adurden/chemtools/autotc/templates/in/"
     self.nnodes = 1
     self.node_template = []
     self.node_proc = []
     self.node_job  = []
     for n in range(0,self.nnodes):
-      (self.node_template).append("template_denali.job")
+      (self.node_template).append("template_foraker.job")
       (self.node_proc).append(None)
       (self.node_job).append('')
     self.flushfiles()
@@ -270,6 +272,7 @@ class schedaemon(Daemon):
  
 if __name__ == "__main__":
         daemon = schedaemon('/tmp/schedaemon.pid')
+        print("Python version: "+str(sys.version))
         if len(sys.argv) == 2:
                 if 'start' == sys.argv[1]:
                         daemon.start()
@@ -278,9 +281,9 @@ if __name__ == "__main__":
                 elif 'restart' == sys.argv[1]:
                         daemon.restart()
                 else:
-                        print "Unknown command"
+                        print("Unknown command")
                         sys.exit(2)
                 sys.exit(0)
         else:
-                print "usage: %s start|stop|restart" % sys.argv[0]
+                print("usage: %s start|stop|restart" % sys.argv[0])
                 sys.exit(2)

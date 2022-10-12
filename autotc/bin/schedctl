@@ -1,11 +1,15 @@
-#!/bin/python
+#!/usr/bin/env python2.7
+
+import sys
+#print("python version schedctl: "+str(sys.version))
+
 
 import os
-schedpath = os.getenv('SCHEDAEMONPATH',"/home/adurden/Programs/chemtools/autotc/bin/")
-import sys
+schedpath = os.getenv('SCHEDAEMONPATH',"/home/adurden/chemtools/autotc/bin/")
 sys.path.append(schedpath)
 from schedctl_lib import *
 
+#print("after schedctl_lib import")
 
 from optparse import OptionParser
 usage = "usage: %prog [options] file1 file2 ..."

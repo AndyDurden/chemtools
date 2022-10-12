@@ -1,3 +1,9 @@
+#!/usr/bin/env python2.7
+
+import sys
+#print("python version maketest.py: "+str(sys.version))
+
+
 import os
 import shutil
 import pprint

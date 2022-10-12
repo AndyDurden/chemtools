@@ -1,13 +1,15 @@
-#!/bin/python
+#!/usr/bin/env python2.7
 
 import sys
+#print("python version schedctl_lib.py: "+str(sys.version))
+
 import os
 import glob
 import subprocess
 import time
 import ast
 
-schedpath = os.getenv('SCHEDAEMONPATH',"/home/adurden/Programs/chemtools/autotc/bin/")
+schedpath = os.getenv('SCHEDAEMONPATH',"/home/adurden/chemtools/autotc/bin/")
 
 def get_sched_pid():
   if not os.path.exists("/tmp/schedaemon.pid"): return False
@@ -23,7 +25,7 @@ def start_sched():
     print("Schedaemon already started\n")
     return pid
   else:
-    p = subprocess.Popen(["python",schedpath+"scheduler.py","start"])
+    p = subprocess.Popen(["python2",schedpath+"scheduler.py","start"])
     p.wait()
     return get_sched_pid()
     
@@ -34,7 +36,7 @@ def stop_sched():
     print("Schedaemon wasn't running (no pidfile)\n")
     return pid
   else:
-    p = subprocess.Popen(["python",schedpath+"scheduler.py","stop"])
+    p = subprocess.Popen(["python2",schedpath+"scheduler.py","stop"])
     p.wait()
     return get_sched_pid()
 

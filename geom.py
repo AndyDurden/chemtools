@@ -170,6 +170,14 @@ def centroid_main():
   print(dist(c1,c2))
   return dist(c1,c2)
 
+def dist_main():
+  refx = readxyz(sys.argv[2])
+  atom1 = 24
+  atom2 = 53
+  vec1 = vec(refx[atom1]['x'])
+  vec2 = vec(refx[atom2]['x'])
+  print(dist(vec1,vec2))
+  return dist(vec1,vec2)
 
 
 # real main
@@ -178,7 +186,8 @@ if sys.argv[1] == "dihedral":
   dihedral_main()
 elif sys.argv[1] == "centroid":
   centroid_main()
-
+elif sys.argv[1] == "dist":
+  dist_main()
 
 
 
