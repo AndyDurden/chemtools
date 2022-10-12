@@ -14,13 +14,13 @@ charge                  0               # Selects the molecular charge (required
 spinmult                1               # Spin multiplicity
 
 # TDCI specific options
-timestep                100             # total propagation time 100 fs
-nstep                   100000          # total 100000 steps (thus, each time step = 100fs/100000steps $
-eshift                  -579.60651150    # shift ground state energy to zero
-stepprint               1               # print results every step
-fstrength               1.0E+20         # field strength 1.0E+20 W/m^2 = 1.0E+16 W/cm^2
-fdirection              x               # x-polarized field
-ftype                   kick            # field type = kick will apply a delta-fN field
+tdci_simulation_time                100             # total propagation time 100 fs
+tdci_nstep                   100000          # total 100000 steps (thus, each time step = 100fs/100000steps $
+tdci_eshift                  gs    # shift ground state energy to zero
+tdci_stepprint               1               # print results every step
+tdci_fstrength               1.0E+20         # field strength 1.0E+20 W/m^2 = 1.0E+16 W/cm^2
+tdci_fdirection              x               # x-polarized field
+tdci_ftype                   kick            # field type = kick will apply a delta-fN field
 
 mrcis                   yes
 
