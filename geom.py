@@ -131,6 +131,7 @@ def centroid(veclist):
   return vecsum*(1./float(len(veclist)))
 
 import sys
+# into our weird dictionary construct
 def readxyz(filename):
   f = open(filename,'r')
   out = []
@@ -146,6 +147,21 @@ def readxyz(filename):
     refx.append({'refnum':i, 'z':out[i][0], 'x':np.array([float(out[i][1]),float(out[i][2]),float(out[i][3])])})
     i=i+1
   return refx
+
+
+def writexyz(xyzdict, filename):
+  atoms = map(lambda x: x['z'], xyzdict)
+  coords = map(lambda x: x['x'], xyzdict)
+  writexyz_(atoms, coords, filename)
+
+def writexyz_(atoms, coords, filename):
+  f = open(filename,'w')
+  f.write(str(len(atoms))+'\n\n')
+  for atom, coord in zip(atoms, coords):
+      f.write(('{:>3s}'+'{:25.17f}'*3+'\n').format(atom, coord[0], coord[1], coord[2]))
+  f.close()
+
+
 
 def dihedral_main():
   refx = readxyz(sys.argv[2])
@@ -180,6 +196,100 @@ def dist_main():
   return dist(vec1,vec2)
 
 
+# k replaces K
+
+import gcutil
+def substitute_fragment(base_xyz, fragment_xyz, I, J, K, k, l, m, dist_Jk, angle_Jkl, dihedral_IJkl, dihedral_Jklm, base_atoms2remove=[]):
+#def substitute_fragment(base_xyz, fragment_xyz, base_atoms2remove=[]):
+  base_str, frag_str = "", ""
+  with f as open(base_xyz, 'r'):
+    base_str = f.read()
+  with f as open(fragment_xyz, 'r'):
+    frag_str = f.read()
+  basel, fragl = base_str.split("\n"), frag_str.split("\n")
+  while len(basel[-1]) < 4: basel.pop() # remove empty lines
+  while len(fragl[-1]) < 4: fragl.pop()
+  # Make sure our reference atoms are the last 3 in base
+  Iline, Jline, Kline = basel[I+1], basel[J+1], basel[K+1]
+  basel.remove(Iline); basel.remove(Jline); basel.remove(Kline)
+  basel.append(Iline); basel.append(Jline); basel.append(Kline)
+  I = len(basel)-3
+  J, K = I+1, I+2
+  # Make sure our reference atoms are the first 3 in frag
+  kline, lline, mline = fragl[k+1], fragl[l+1], fragl[m+1]
+  fragl.remove(kline); fragl.remove(lline); fragl.remove(mline)
+  fragl.insert(0, mline); fragl.insert(0, lline); fragl.insert(0, kline)
+  k, l, m = 0, 1, 2
+  # Back to strings, then zmat
+  base_str, frag_str = "\n".join(basel), "\n".join(fragl)
+  base_zstr, frag_zstr = xyz_str2zmat(base_str), xyz_str2zmat(frag_zstr)
+  basezl, fragzl = base_zstr.split("\n"), frag_zstr.split("\n")
+  # Substitute K for k
+  lastbase = basezl[-1].split()
+  firstfrag = fragzl[0].split()
+  lastbase[0] = firstfrag[0]
+  if int(lastbase[1]) != J:
+    print("WARNING: lastbase[1] != J ("+str(lastbase[1])+" != "+str(J)")")
+  lastbase[2] = str(dist_Jk)
+  basezl[-1] = "  ".join(lastbase)
+  if len(fragzl) > 1:
+    # Add l
+    lline = fragzl[1].split()
+    lline[1] = str(K)
+    lline.extend([str(J), str(angle_Jkl), str(I) , str(dihedral_IJkl)])
+    basezl.append( "  ".join(lline)  )
+    if len(fragzl) >2:
+      # Add m
+      mline = fragzl[2].split()
+      mline[1] = int(mline[1])+K-1
+      mline[3] = int(mline[3])+K-1
+      mline.extend([str(J), str(dihedral_Jklm)])
+      basezl.append( "  ".join(mline) )
+      if len(fragzl) >3:
+        # Add any other lines
+        for n in range(3,len(fragzl)):
+          nline = fragzl[n].split(0
+          nline[1] = int(nline[1])+K-1
+          nline[3] = int(nline[3])+K-1
+          nline[5] = int(nline[5])+K-1
+	  basezl.append( "  ".join(nline) )
+  basez_out = "\n".join(basezl)
+  zoutf = open("test_out.zmat", 'w')
+  zoutf.write(basez_out)
+  zoutf.close()
+  xyzout = zmat2xyz(basez_out)
+  xyzoutf = open("test_out.xyz", 'w')
+  xyzoutf.write(xyzout)
+  xyzoutf.close()
+  print("OUTPUT:\nZMAT:")
+  print(basez_out)
+  print("\nXYZ:")
+  print(xyzout)
+  
+
+  
+  
+   
+def xyz_str2zmat(xyz_str):
+  xyzarr, atomnames = gcutil.readxyz(xyz_str)
+  distmat = gcutil.distance_matrix(xyzarr)
+  return gcutil.write_zmat(xyzarr, distmat, atomnames, False, False, False)
+  
+
+def xyz2zmat(xyzfile):
+  xyzf = open(xyzfile, 'r')
+  xyz_str = xyzf.read()
+  xyzf.close()
+  xyzarr, atomnames = gcutil.readxyz(xyz_str)
+  distmat = gcutil.distance_matrix(xyzarr)
+  return gcutil.write_zmat(xyzarr, distmat, atomnames, False, False, False)
+
+def zmat2xyz(zmat_str):
+  atomnames, rconnect, rlist, aconnect, alist, dconnect, dlist = gcutil.readzmat(zmat_str)
+  return gcutil.write_xyz(atomnames, rconnect, rlist, aconnect, alist, dconnect, dlist)
+
+
+
 # real main
 
 if sys.argv[1] == "dihedral":
@@ -188,8 +298,10 @@ elif sys.argv[1] == "centroid":
   centroid_main()
 elif sys.argv[1] == "dist":
   dist_main()
-
-
+elif sys.argv[1] == "zmat":
+  substitute_fragment("temp.xyz","temp.xyz")
+elif sys.argv[1] == "xyz":
+  zmat2xyz(sys.argv[2])
 
 
 
